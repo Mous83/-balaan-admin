@@ -10,6 +10,14 @@ export const useAuth = () => {
   const [isAdminUser, setIsAdminUser] = useState(false);
 
   useEffect(() => {
+    // Vérifier le mode test
+    if (localStorage.getItem('admin_test_mode') === 'true') {
+      setUser({ email: 'admin@balaan.com', uid: 'test-admin' });
+      setIsAdminUser(true);
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user && isAdmin(user.email)) {
         setUser(user);
@@ -54,6 +62,8 @@ export const useAuth = () => {
 
   const logout = async () => {
     try {
+      // Nettoyer le mode test
+      localStorage.removeItem('admin_test_mode');
       await signOut(auth);
       toast.success('Déconnexion réussie');
     } catch (error) {

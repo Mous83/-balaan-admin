@@ -27,6 +27,14 @@ export default function Login() {
       return;
     }
 
+    // Mode test rapide
+    if (email === 'admin@balaan.com' && password === 'admin123') {
+      // Simuler une connexion réussie
+      localStorage.setItem('admin_test_mode', 'true');
+      window.location.reload();
+      return;
+    }
+
     try {
       await login(email, password);
     } catch (error) {
