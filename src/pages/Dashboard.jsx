@@ -79,7 +79,7 @@ export default function Dashboard() {
         totalUsers: usersData.total,
         pendingKyc: kycData.pending,
         supportTickets: supportData.total,
-        totalRevenue: 0, // Pas de commission pour l'instant
+        totalRevenue: await calculateTotalBookings(), // Basé sur les réservations
         clientSatisfaction: await calculateRealSatisfaction(), // Vraies données
         averageResponseTime: await calculateResponseTime(),
         activeSalons: salonsData.active,
@@ -262,6 +262,27 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Erreur croissance:', error);
       return 15; // 15% par défaut
+    }
+  };
+
+  const calculateTotalBookings = async () => {
+    try {
+      // Calculer le CA total basé sur les réservations
+      const bookingsRef = collection(db, 'bookings');
+      const bookingsSnapshot = await getDocs(bookingsRef);
+      
+      let totalAmount = 0;
+      bookingsSnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.status === 'completed' && data.amount) {
+          totalAmount += data.amount;
+        }
+      });
+      
+      return totalAmount;
+    } catch (error) {
+      console.error('Erreur calcul bookings:', error);
+      return 0; // Aucune réservation trouvée
     }
   };
 

@@ -28,10 +28,15 @@ import {
   Analytics,
   Settings,
   Logout,
-  AccountCircle
+  AccountCircle,
+  DarkMode,
+  LightMode,
+  LocalOffer,
+  BugReport
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useTheme } from '../../contexts/ThemeContext';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 
@@ -42,7 +47,9 @@ const menuItems = [
   { text: 'Salons', icon: <Business />, path: '/salons' },
   { text: 'Vérification KYC', icon: <VerifiedUser />, path: '/kyc' },
   { text: 'Utilisateurs', icon: <People />, path: '/users' },
+  { text: 'Promos', icon: <LocalOffer />, path: '/promos' },
   { text: 'Support', icon: <SupportAgent />, path: '/support' },
+  { text: 'Crashes', icon: <BugReport />, path: '/crashes' },
   { text: 'Analytics', icon: <Analytics />, path: '/analytics' },
   { text: 'Paramètres', icon: <Settings />, path: '/settings' }
 ];
@@ -54,6 +61,7 @@ export default function AdminLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { isDarkMode, toggleTheme } = useTheme();
 
   useEffect(() => {
     loadBadges();
@@ -189,6 +197,24 @@ export default function AdminLayout({ children }) {
             <Typography variant="body2" color="text.secondary">
               {user?.email}
             </Typography>
+            
+            {/* Toggle thème */}
+            <IconButton
+              onClick={toggleTheme}
+              size="small"
+              title={isDarkMode ? 'Mode clair' : 'Mode sombre'}
+              sx={{ 
+                background: 'rgba(212, 175, 55, 0.1)',
+                '&:hover': { 
+                  background: 'rgba(212, 175, 55, 0.2)',
+                  transform: 'scale(1.05)'
+                },
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {isDarkMode ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
+            </IconButton>
+            
             <IconButton onClick={handleProfileMenuOpen} size="small">
               <Avatar sx={{ width: 32, height: 32 }}>
                 <AccountCircle />

@@ -11,11 +11,14 @@ import Login from './components/Auth/Login';
 // Pages
 import Dashboard from './pages/Dashboard';
 import Salons from './pages/Salons';
+import SalonDetail from './pages/SalonDetail';
 import KycVerification from './pages/KycVerification';
 import Users from './pages/Users';
 import Support from './pages/Support';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import PromoManagement from './pages/PromoManagement';
+import CrashMonitoring from './pages/CrashMonitoring';
 
 // Thème Material-UI
 const theme = createTheme({
@@ -89,6 +92,22 @@ function App() {
             } 
           />
           <Route 
+            path="/salon/:salonId" 
+            element={
+              <ProtectedRoute>
+                <SalonDetail />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/promos" 
+            element={
+              <ProtectedRoute>
+                <PromoManagement />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/kyc" 
             element={
               <ProtectedRoute>
@@ -109,6 +128,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Support />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/crashes" 
+            element={
+              <ProtectedRoute>
+                <CrashMonitoring />
               </ProtectedRoute>
             } 
           />
