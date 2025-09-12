@@ -141,11 +141,13 @@ export default function Dashboard() {
     
     salonsSnapshot.forEach(doc => {
       const data = doc.data();
-      if (data.kyc_status === 'pending') pending++;
-      else if (data.kyc_status === 'approved') approved++;
-      else if (data.kyc_status === 'rejected') rejected++;
+      // Corriger les valeurs réelles de Firebase
+      if (data.kyc_status === 'under_review' || data.kyc_status === 'pending') pending++;
+      else if (data.kyc_status === 'approved' || data.kyc_status === 'verified') approved++;
+      else if (data.kyc_status === 'rejected' || data.kyc_status === 'denied') rejected++;
     });
     
+    console.log('🔍 KYC Stats:', { pending, approved, rejected });
     return { pending, approved, rejected };
   };
 

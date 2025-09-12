@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AppBar,
   Box,
@@ -32,15 +32,17 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 
 const drawerWidth = 260;
 
 const menuItems = [
   { text: 'Dashboard', icon: <Dashboard />, path: '/' },
   { text: 'Salons', icon: <Business />, path: '/salons' },
-  { text: 'Vérification KYC', icon: <VerifiedUser />, path: '/kyc', badge: 3 },
+  { text: 'Vérification KYC', icon: <VerifiedUser />, path: '/kyc' },
   { text: 'Utilisateurs', icon: <People />, path: '/users' },
-  { text: 'Support', icon: <SupportAgent />, path: '/support', badge: 5 },
+  { text: 'Support', icon: <SupportAgent />, path: '/support' },
   { text: 'Analytics', icon: <Analytics />, path: '/analytics' },
   { text: 'Paramètres', icon: <Settings />, path: '/settings' }
 ];
@@ -48,9 +50,41 @@ const menuItems = [
 export default function AdminLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [badges, setBadges] = useState({ kyc: 0, support: 0 });
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+
+  useEffect(() => {
+    loadBadges();
+  }, []);
+
+  const loadBadges = async () => {
+    try {
+      // Compter les KYC en attente
+      const salonsRef = collection(db, 'salons');
+      const salonsSnapshot = await getDocs(salonsRef);
+      
+      let kycPending = 0;
+      salonsSnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.kyc_status === 'under_review' || data.kyc_status === 'pending') {
+          kycPending++;
+        }
+      });
+
+      // Compter les tickets support
+      const supportRef = collection(db, 'support_tickets');
+      const supportSnapshot = await getDocs(supportRef);
+      
+      setBadges({
+        kyc: kycPending,
+        support: supportSnapshot.size
+      });
+    } catch (error) {
+      console.error('Erreur badges:', error);
+    }
+  };
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -105,8 +139,12 @@ export default function AdminLayout({ children }) {
               }}
             >
               <ListItemIcon>
-                {item.badge ? (
-                  <Badge badgeContent={item.badge} color="error">
+                {item.path === '/kyc' && badges.kyc > 0 ? (
+                  <Badge badgeContent={badges.kyc} color="warning">
+                    {item.icon}
+                  </Badge>
+                ) : item.path === '/support' && badges.support > 0 ? (
+                  <Badge badgeContent={badges.support} color="error">
                     {item.icon}
                   </Badge>
                 ) : (
