@@ -5,6 +5,21 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Balaan Admin - Interface d'Administration</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Interface d'administration pour la plateforme Balaan - Gestion des salons, KYC, support client" />
+    <meta name="theme-color" content="#1976d2" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Balaan Admin" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Favicons -->
+    <link rel="apple-touch-icon" href="/favicon.ico" />
+    <meta name="msapplication-TileColor" content="#1976d2" />
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap"
@@ -13,6 +28,39 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
     />
+    
+    <!-- Google Analytics -->
+    <script>
+      // Configuration Google Analytics avec ID dynamique
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      
+      // L'ID sera injecté par Vite
+      window.GA_MEASUREMENT_ID = 'G-7R1BV7W875';
+      
+      if (window.GA_MEASUREMENT_ID && window.GA_MEASUREMENT_ID !== '%VITE_GA_MEASUREMENT_ID%') {
+        // Charger le script Google Analytics
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${window.GA_MEASUREMENT_ID}`;
+        document.head.appendChild(script);
+        
+        // Configuration
+        gtag('config', window.GA_MEASUREMENT_ID, {
+          page_title: 'Balaan Admin',
+          send_page_view: true,
+          custom_map: {
+            'dimension1': 'admin_email',
+            'dimension2': 'admin_action'
+          }
+        });
+        
+        console.log('📊 Google Analytics activé:', window.GA_MEASUREMENT_ID);
+      } else {
+        console.log('⚠️ Google Analytics: MEASUREMENT_ID non configuré');
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

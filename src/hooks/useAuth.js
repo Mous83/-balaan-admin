@@ -3,6 +3,7 @@ import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebas
 import { auth } from '../config/firebase';
 import { isAdmin } from '../config/admin';
 import toast from 'react-hot-toast';
+import { setAdminUser } from '../utils/analytics';
 
 export const useAuth = () => {
   const [user, setUser] = useState(null);
@@ -12,9 +13,12 @@ export const useAuth = () => {
   useEffect(() => {
     // Vérifier le mode test
     if (localStorage.getItem('admin_test_mode') === 'true') {
-      setUser({ email: 'admin@balaan.com', uid: 'test-admin' });
+      const testUser = { email: 'admin@balaan.com', uid: 'test-admin' };
+      setUser(testUser);
       setIsAdminUser(true);
       setLoading(false);
+      // 📊 Tracker l'admin en mode test
+      setAdminUser(testUser.email, testUser.uid);
       return;
     }
 
@@ -23,6 +27,8 @@ export const useAuth = () => {
         setUser(user);
         setIsAdminUser(true);
         console.log('✅ Admin connecté:', user.email);
+        // 📊 Tracker l'admin connecté
+        setAdminUser(user.email, user.uid);
       } else if (user) {
         // Utilisateur connecté mais pas admin
         setUser(null);
