@@ -60,12 +60,12 @@ export default function Salons() {
     try {
       setLoading(true);
       const salonsRef = collection(db, 'salons');
-      const salonsSnapshot = await getDocs(query(salonsRef, orderBy('created_at', 'desc')));
+      const salonsSnapshot = await getDocs(query(salonsRef, orderBy('created_time', 'desc')));
       
       const salonsData = salonsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        created_at: doc.data().created_at?.toDate()?.toLocaleDateString() || 'N/A'
+        created_at: doc.data().created_time?.toDate()?.toLocaleDateString() || 'N/A'
       }));
       
       setSalons(salonsData);
