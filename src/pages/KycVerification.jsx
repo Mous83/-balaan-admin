@@ -71,6 +71,10 @@ export default function KycVerification() {
       
       for (const salonDoc of salonsSnapshot.docs) {
         const salonData = salonDoc.data();
+        console.log(`🔍 Salon ${salonData.nom || salonDoc.id}:`, {
+          kyc_status: salonData.kyc_status,
+          id: salonDoc.id
+        });
         
         // Charger les documents KYC de ce salon
         const documentsRef = collection(db, 'salons', salonDoc.id, 'documents');
@@ -81,12 +85,14 @@ export default function KycVerification() {
           ...doc.data()
         }));
         
-        // Vérifier s'il y a des documents en attente
+        // Vérifier s'il y a des documents en attente OU si le salon a un statut KYC en attente
         const hasPendingDocs = docsData.some(doc => 
           doc.status === 'pending' || doc.status === undefined
         );
         
-        if (hasPendingDocs || docsData.length > 0) {
+        const hasKycPending = salonData.kyc_status === 'under_review' || salonData.kyc_status === 'pending';
+        
+        if (hasPendingDocs || docsData.length > 0 || hasKycPending) {
           salonsWithKyc.push({
             id: salonDoc.id,
             ...salonData,
@@ -97,6 +103,7 @@ export default function KycVerification() {
         }
       }
       
+      console.log('📊 Total salons KYC trouvés:', salonsWithKyc.length);
       setSalons(salonsWithKyc);
     } catch (error) {
       console.error('Erreur chargement KYC:', error);
