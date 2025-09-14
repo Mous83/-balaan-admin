@@ -32,7 +32,7 @@ import {
   Visibility
 } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
-import { collection, query, getDocs, doc, updateDoc, where, orderBy } from 'firebase/firestore';
+import { collection, query, getDocs, doc, updateDoc, where, limit, startAfter } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import toast from 'react-hot-toast';
 
@@ -43,32 +43,48 @@ export default function Users() {
   const [detailDialog, setDetailDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [lastVisible, setLastVisible] = useState(null);
+  const pageSize = 50;
 
   useEffect(() => {
     loadUsers();
   }, []);
 
-  const loadUsers = async () => {
+  const loadUsers = async (isNextPage = false) => {
     try {
       setLoading(true);
       const usersRef = collection(db, 'users');
       
-      // Charger TOUS les utilisateurs sans tri pour éviter l'erreur d'index manquant
-      const usersSnapshot = await getDocs(usersRef);
+      // Pagination avec limite
+      let q = query(usersRef, limit(pageSize));
       
+      if (isNextPage && lastVisible) {
+        q = query(usersRef, startAfter(lastVisible), limit(pageSize));
+      }
+      
+      const usersSnapshot = await getDocs(q);
       const usersData = [];
       
-      console.log(`📊 Chargement de ${usersSnapshot.docs.length} utilisateurs...`);
+      console.log(`📊 Chargement de ${usersSnapshot.docs.length} utilisateurs (page ${currentPage})...`);
       
       for (const userDoc of usersSnapshot.docs) {
         const userData = userDoc.data();
         
-        // Debug: afficher les rôles trouvés
-        console.log(`👤 Utilisateur ${userDoc.id}: rôle = "${userData.role}"`);
+        // Normaliser les rôles avec majuscules correctes
+        let normalizedRole = userData.role;
+        if (userData.role?.toLowerCase() === 'client') {
+          normalizedRole = 'Client';
+        } else if (userData.role?.toLowerCase() === 'établissement' || userData.role?.toLowerCase() === 'etablissement') {
+          normalizedRole = 'Établissement';
+        }
+        
+        console.log(`👤 ${userDoc.id}: rôle = "${normalizedRole}"`);
         
         // Compter les réservations pour ce client
         let reservationCount = 0;
-        if (userData.role === 'Client') {
+        if (normalizedRole === 'Client') {
           try {
             const reservationsQuery = query(
               collection(db, 'reservation'),
@@ -84,9 +100,8 @@ export default function Users() {
         // Compter les réservations et clients uniques pour les établissements
         let salonReservations = 0;
         let uniqueClients = 0;
-        if (userData.role === 'Établissement') {
+        if (normalizedRole === 'Établissement') {
           try {
-            // Trouver le salon de cet utilisateur
             const salonsQuery = query(
               collection(db, 'salons'),
               where('owner_id', '==', userDoc.id)
@@ -96,7 +111,6 @@ export default function Users() {
             if (!salonsSnapshot.empty) {
               const salonId = salonsSnapshot.docs[0].id;
               
-              // Compter les réservations pour ce salon
               const reservationsQuery = query(
                 collection(db, 'reservation'),
                 where('salon_id', '==', salonId)
@@ -104,7 +118,6 @@ export default function Users() {
               const reservationsSnapshot = await getDocs(reservationsQuery);
               salonReservations = reservationsSnapshot.size;
               
-              // Compter les clients uniques
               const clientIds = new Set();
               reservationsSnapshot.docs.forEach(doc => {
                 const resData = doc.data();
@@ -122,6 +135,7 @@ export default function Users() {
         usersData.push({
           id: userDoc.id,
           ...userData,
+          role: normalizedRole, // Utiliser le rôle normalisé
           created_time: userData.created_time?.toDate()?.toLocaleDateString() || 'N/A',
           last_sign_in_time: userData.last_sign_in_time?.toDate()?.toLocaleDateString() || 'Jamais',
           reservation_count: reservationCount,
@@ -130,18 +144,31 @@ export default function Users() {
         });
       }
       
-      console.log(`✅ ${usersData.length} utilisateurs chargés`);
-      console.log('Répartition par rôle:', usersData.reduce((acc, user) => {
-        acc[user.role] = (acc[user.role] || 0) + 1;
-        return acc;
-      }, {}));
+      if (isNextPage) {
+        setUsers(prev => [...prev, ...usersData]);
+      } else {
+        setUsers(usersData);
+      }
       
-      setUsers(usersData);
+      // Gérer la pagination
+      if (usersSnapshot.docs.length > 0) {
+        setLastVisible(usersSnapshot.docs[usersSnapshot.docs.length - 1]);
+        setHasNextPage(usersSnapshot.docs.length === pageSize);
+      } else {
+        setHasNextPage(false);
+      }
     } catch (error) {
       console.error('Erreur chargement utilisateurs:', error);
       toast.error('Erreur lors du chargement');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadNextPage = () => {
+    if (hasNextPage && !loading) {
+      setCurrentPage(prev => prev + 1);
+      loadUsers(true);
     }
   };
 
@@ -438,6 +465,20 @@ export default function Users() {
             getRowId={(row) => row.id}
           />
         </Box>
+        
+        {/* Bouton charger plus */}
+        {hasNextPage && (
+          <Box sx={{ p: 2, textAlign: 'center' }}>
+            <Button
+              variant="outlined"
+              onClick={loadNextPage}
+              disabled={loading}
+              startIcon={loading ? <CircularProgress size={20} /> : null}
+            >
+              {loading ? 'Chargement...' : `Charger plus (${users.length} utilisateurs chargés)`}
+            </Button>
+          </Box>
+        )}
       </Card>
 
       {/* Dialog détails utilisateur */}

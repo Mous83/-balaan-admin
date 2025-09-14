@@ -1,24 +1,24 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline } from '@mui/material';
+import { CssBaseline, CircularProgress, Box } from '@mui/material';
 import { Toaster } from 'react-hot-toast';
 
 import { useAuth } from './hooks/useAuth';
 import AdminLayout from './components/Layout/AdminLayout';
 import Login from './components/Auth/Login';
 
-// Pages
-import Dashboard from './pages/Dashboard';
-import Salons from './pages/Salons';
-import SalonDetail from './pages/SalonDetail';
-import KycVerification from './pages/KycVerification';
-import Users from './pages/Users';
-import Support from './pages/Support';
-import Analytics from './pages/Analytics';
-import Settings from './pages/Settings';
-import PromoManagement from './pages/PromoManagement';
-import CrashMonitoring from './pages/CrashMonitoring';
+// Lazy loading des pages pour optimiser les performances
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Salons = lazy(() => import('./pages/Salons'));
+const SalonDetail = lazy(() => import('./pages/SalonDetail'));
+const KycVerification = lazy(() => import('./pages/KycVerification'));
+const Users = lazy(() => import('./pages/Users'));
+const Support = lazy(() => import('./pages/Support'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const Settings = lazy(() => import('./pages/Settings'));
+const PromoManagement = lazy(() => import('./pages/PromoManagement'));
+const CrashMonitoring = lazy(() => import('./pages/CrashMonitoring'));
 
 // Thème Material-UI
 const theme = createTheme({
@@ -54,19 +54,44 @@ const theme = createTheme({
   },
 });
 
+// Composant de chargement optimisé
+function LoadingSpinner() {
+  return (
+    <Box 
+      sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        flexDirection: 'column',
+        gap: 2
+      }}
+    >
+      <CircularProgress size={40} />
+      <div>Chargement...</div>
+    </Box>
+  );
+}
+
 // Composant de protection des routes
 function ProtectedRoute({ children }) {
   const { user, loading, isAdminUser } = useAuth();
 
   if (loading) {
-    return <div>Chargement...</div>;
+    return <LoadingSpinner />;
   }
 
   if (!user || !isAdminUser) {
     return <Login />;
   }
 
-  return <AdminLayout>{children}</AdminLayout>;
+  return (
+    <AdminLayout>
+      <Suspense fallback={<LoadingSpinner />}>
+        {children}
+      </Suspense>
+    </AdminLayout>
+  );
 }
 
 function App() {
