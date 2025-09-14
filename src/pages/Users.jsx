@@ -72,23 +72,16 @@ export default function Users() {
       for (const userDoc of usersSnapshot.docs) {
         const userData = userDoc.data();
         
-        // Normaliser les rôles avec majuscules correctes
-        let normalizedRole = userData.role;
-        if (userData.role?.toLowerCase() === 'client') {
-          normalizedRole = 'Client';
-        } else if (userData.role?.toLowerCase() === 'établissement' || userData.role?.toLowerCase() === 'etablissement') {
-          normalizedRole = 'Établissement';
-        }
-        
-        console.log(`👤 ${userDoc.id}: rôle = "${normalizedRole}"`);
+        // Debug: afficher le type d'utilisateur
+        console.log(`👤 ${userDoc.id}: role = "${userData.role}"`);
         
         // Compter les réservations pour ce client
         let reservationCount = 0;
-        if (normalizedRole === 'Client') {
+        if (userData.role === 'Client') {
           try {
             const reservationsQuery = query(
               collection(db, 'reservation'),
-              where('user_id', '==', userDoc.id)
+              where('client', '==', userDoc.id)
             );
             const reservationsSnapshot = await getDocs(reservationsQuery);
             reservationCount = reservationsSnapshot.size;
@@ -100,7 +93,7 @@ export default function Users() {
         // Compter les réservations et clients uniques pour les établissements
         let salonReservations = 0;
         let uniqueClients = 0;
-        if (normalizedRole === 'Établissement') {
+        if (userData.role === 'Établissement') {
           try {
             const salonsQuery = query(
               collection(db, 'salons'),
@@ -113,7 +106,7 @@ export default function Users() {
               
               const reservationsQuery = query(
                 collection(db, 'reservation'),
-                where('salon_id', '==', salonId)
+                where('salon_ref', '==', salonId)
               );
               const reservationsSnapshot = await getDocs(reservationsQuery);
               salonReservations = reservationsSnapshot.size;
@@ -121,8 +114,8 @@ export default function Users() {
               const clientIds = new Set();
               reservationsSnapshot.docs.forEach(doc => {
                 const resData = doc.data();
-                if (resData.user_id) {
-                  clientIds.add(resData.user_id);
+                if (resData.client) {
+                  clientIds.add(resData.client);
                 }
               });
               uniqueClients = clientIds.size;
@@ -135,7 +128,6 @@ export default function Users() {
         usersData.push({
           id: userDoc.id,
           ...userData,
-          role: normalizedRole, // Utiliser le rôle normalisé
           created_time: userData.created_time?.toDate()?.toLocaleDateString() || 'N/A',
           last_sign_in_time: userData.last_sign_in_time?.toDate()?.toLocaleDateString() || 'Jamais',
           reservation_count: reservationCount,
@@ -203,10 +195,12 @@ export default function Users() {
   };
 
   const getUserTypeChip = (user) => {
-    if (user.user_type === 'salon_owner') {
-      return <Chip icon={<Business />} label="Propriétaire" color="primary" size="small" />;
-    } else {
+    if (user.role === 'Établissement') {
+      return <Chip icon={<Business />} label="Établissement" color="primary" size="small" />;
+    } else if (user.role === 'Client') {
       return <Chip icon={<Person />} label="Client" color="default" size="small" />;
+    } else {
+      return <Chip icon={<Person />} label="Utilisateur" color="secondary" size="small" />;
     }
   };
 
@@ -223,8 +217,8 @@ export default function Users() {
                          user.email?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesFilter = filterType === 'all' || 
-                         (filterType === 'clients' && user.user_type !== 'salon_owner') ||
-                         (filterType === 'owners' && user.user_type === 'salon_owner') ||
+                         (filterType === 'clients' && user.role === 'Client') ||
+                         (filterType === 'owners' && user.role === 'Établissement') ||
                          (filterType === 'banned' && user.is_banned);
     
     return matchesSearch && matchesFilter;
@@ -357,7 +351,7 @@ export default function Users() {
                 </Avatar>
                 <Box>
                   <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                    {users.filter(u => u.user_type !== 'salon_owner').length}
+                    {users.filter(u => u.role === 'Client').length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Clients
@@ -376,10 +370,10 @@ export default function Users() {
                 </Avatar>
                 <Box>
                   <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                    {users.filter(u => u.user_type === 'salon_owner').length}
+                    {users.filter(u => u.role === 'Établissement').length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Propriétaires
+                    Établissements
                   </Typography>
                 </Box>
               </Box>
@@ -432,7 +426,7 @@ export default function Users() {
               >
                 <MenuItem value="all">Tous</MenuItem>
                 <MenuItem value="clients">Clients</MenuItem>
-                <MenuItem value="owners">Propriétaires</MenuItem>
+                <MenuItem value="owners">Établissements</MenuItem>
                 <MenuItem value="banned">Bannis</MenuItem>
               </TextField>
             </Grid>
