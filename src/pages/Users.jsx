@@ -52,13 +52,89 @@ export default function Users() {
     try {
       setLoading(true);
       const usersRef = collection(db, 'users');
-      const usersSnapshot = await getDocs(query(usersRef, orderBy('created_time', 'desc')));
       
-      const usersData = usersSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        created_time: doc.data().created_time?.toDate()?.toLocaleDateString() || 'N/A'
-      }));
+      // Charger TOUS les utilisateurs sans tri pour éviter l'erreur d'index manquant
+      const usersSnapshot = await getDocs(usersRef);
+      
+      const usersData = [];
+      
+      console.log(`📊 Chargement de ${usersSnapshot.docs.length} utilisateurs...`);
+      
+      for (const userDoc of usersSnapshot.docs) {
+        const userData = userDoc.data();
+        
+        // Debug: afficher les rôles trouvés
+        console.log(`👤 Utilisateur ${userDoc.id}: rôle = "${userData.role}"`);
+        
+        // Compter les réservations pour ce client
+        let reservationCount = 0;
+        if (userData.role === 'Client') {
+          try {
+            const reservationsQuery = query(
+              collection(db, 'reservation'),
+              where('user_id', '==', userDoc.id)
+            );
+            const reservationsSnapshot = await getDocs(reservationsQuery);
+            reservationCount = reservationsSnapshot.size;
+          } catch (error) {
+            console.error('Erreur comptage réservations:', error);
+          }
+        }
+        
+        // Compter les réservations et clients uniques pour les établissements
+        let salonReservations = 0;
+        let uniqueClients = 0;
+        if (userData.role === 'Établissement') {
+          try {
+            // Trouver le salon de cet utilisateur
+            const salonsQuery = query(
+              collection(db, 'salons'),
+              where('owner_id', '==', userDoc.id)
+            );
+            const salonsSnapshot = await getDocs(salonsQuery);
+            
+            if (!salonsSnapshot.empty) {
+              const salonId = salonsSnapshot.docs[0].id;
+              
+              // Compter les réservations pour ce salon
+              const reservationsQuery = query(
+                collection(db, 'reservation'),
+                where('salon_id', '==', salonId)
+              );
+              const reservationsSnapshot = await getDocs(reservationsQuery);
+              salonReservations = reservationsSnapshot.size;
+              
+              // Compter les clients uniques
+              const clientIds = new Set();
+              reservationsSnapshot.docs.forEach(doc => {
+                const resData = doc.data();
+                if (resData.user_id) {
+                  clientIds.add(resData.user_id);
+                }
+              });
+              uniqueClients = clientIds.size;
+            }
+          } catch (error) {
+            console.error('Erreur comptage salon:', error);
+          }
+        }
+        
+        usersData.push({
+          id: userDoc.id,
+          ...userData,
+          created_time: userData.created_time?.toDate()?.toLocaleDateString() || 'N/A',
+          last_sign_in_time: userData.last_sign_in_time?.toDate()?.toLocaleDateString() || 'Jamais',
+          reservation_count: reservationCount,
+          salon_reservations: salonReservations,
+          unique_clients: uniqueClients
+        });
+      }
+      
+      console.log(`✅ ${usersData.length} utilisateurs chargés`);
+      console.log('Répartition par rôle:', usersData.reduce((acc, user) => {
+        acc[user.role] = (acc[user.role] || 0) + 1;
+        return acc;
+      }, {}));
       
       setUsers(usersData);
     } catch (error) {

@@ -39,6 +39,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import GlobalSearch from '../Search/GlobalSearch';
 
 const drawerWidth = 260;
 
@@ -58,6 +59,7 @@ export default function AdminLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [badges, setBadges] = useState({ kyc: 0, support: 0 });
+  const [searchOpen, setSearchOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -194,6 +196,11 @@ export default function AdminLayout({ children }) {
             {menuItems.find(item => item.path === location.pathname)?.text || 'Dashboard'}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* Recherche globale */}
+            <Box sx={{ position: 'relative', display: { xs: 'none', md: 'block' } }}>
+              <GlobalSearch onClose={() => setSearchOpen(false)} />
+            </Box>
+            
             <Typography variant="body2" color="text.secondary">
               {user?.email}
             </Typography>
