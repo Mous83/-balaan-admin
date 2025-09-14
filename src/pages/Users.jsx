@@ -46,6 +46,7 @@ export default function Users() {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [lastVisible, setLastVisible] = useState(null);
+  const [totalCount, setTotalCount] = useState(0);
   const pageSize = 50;
 
   useEffect(() => {
@@ -56,6 +57,13 @@ export default function Users() {
     try {
       setLoading(true);
       const usersRef = collection(db, 'users');
+      
+      // Compter le total d'utilisateurs si c'est la première page
+      if (!isNextPage) {
+        const totalSnapshot = await getDocs(usersRef);
+        setTotalCount(totalSnapshot.size);
+        console.log(`📊 Total utilisateurs dans la DB: ${totalSnapshot.size}`);
+      }
       
       // Pagination avec limite
       let q = query(usersRef, limit(pageSize));
@@ -72,8 +80,14 @@ export default function Users() {
       for (const userDoc of usersSnapshot.docs) {
         const userData = userDoc.data();
         
-        // Debug: afficher le type d'utilisateur
-        console.log(`👤 ${userDoc.id}: role = "${userData.role}"`);
+        // Debug: afficher le type d'utilisateur et tous les champs
+        console.log(`👤 ${userDoc.id}:`, {
+          role: userData.role,
+          display_name: userData.display_name,
+          email: userData.email,
+          created_time: userData.created_time,
+          allFields: Object.keys(userData).sort()
+        });
         
         // Compter les réservations pour ce client
         let reservationCount = 0;
@@ -316,8 +330,21 @@ export default function Users() {
             Gestion des Utilisateurs
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            {users.length} utilisateurs au total
+            {users.length} sur {totalCount} utilisateurs au total
           </Typography>
+          <Button 
+            variant="text" 
+            size="small" 
+            onClick={() => {
+              setUsers([]);
+              setCurrentPage(1);
+              setLastVisible(null);
+              loadUsers();
+            }}
+            sx={{ mt: 1 }}
+          >
+            🔄 Actualiser
+          </Button>
         </Box>
       </Box>
 
