@@ -25,14 +25,14 @@ import {
   People,
   VerifiedUser,
   SupportAgent,
-  Analytics,
   Settings,
   Logout,
   AccountCircle,
   DarkMode,
   LightMode,
   LocalOffer,
-  BugReport
+  BugReport,
+  Security
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
@@ -51,7 +51,7 @@ const menuItems = [
   { text: 'Promos', icon: <LocalOffer />, path: '/promos' },
   { text: 'Support', icon: <SupportAgent />, path: '/support' },
   { text: 'Crashes', icon: <BugReport />, path: '/crashes' },
-  { text: 'Analytics', icon: <Analytics />, path: '/analytics' },
+  { text: 'Analytics', icon: <Security />, path: '/analytics' },
   { text: 'Paramètres', icon: <Settings />, path: '/settings' }
 ];
 
