@@ -110,14 +110,9 @@ export default function Dashboard() {
         { name: 'Rejetés', value: kycData.rejected }
       ]);
 
-      // Activité récente simulée
-      setRecentActivity([
-        { type: 'salon', action: 'Nouveau salon créé', name: 'Beauty Salon Paris', time: '2 min' },
-        { type: 'kyc', action: 'KYC soumis', name: 'Coiffure Deluxe', time: '5 min' },
-        { type: 'user', action: 'Nouvel utilisateur', name: 'Marie Dubois', time: '8 min' },
-        { type: 'support', action: 'Ticket support', name: 'Problème réservation', time: '12 min' },
-        { type: 'salon', action: 'Salon approuvé', name: 'Nails & Beauty', time: '15 min' }
-      ]);
+      // Charger les activités récentes (vraies données)
+      const activities = await loadRecentActivities();
+      setRecentActivity(activities);
 
     } catch (error) {
       console.error('Erreur chargement dashboard:', error);

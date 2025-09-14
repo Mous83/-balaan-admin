@@ -121,15 +121,34 @@ export default function KycVerification() {
   };
 
   const approveDocument = async (documentId, salonId) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir approuver ce document ?')) {
+      return;
+    }
+    
     try {
       const docRef = doc(db, 'salons', salonId, 'documents', documentId);
       await updateDoc(docRef, {
         status: 'approved',
         approved_at: new Date(),
-        approved_by: 'admin' // Tu peux remplacer par l'email admin
+        approved_by: 'admin'
       });
       
-      toast.success('Document approuvé');
+      // Vérifier si tous les documents sont approuvés pour mettre à jour le statut KYC
+      const allDocs = documents.map(doc => 
+        doc.id === documentId ? { ...doc, status: 'approved' } : doc
+      );
+      const allApproved = allDocs.every(doc => doc.status === 'approved');
+      
+      if (allApproved && allDocs.length > 0) {
+        await updateDoc(doc(db, 'salons', salonId), {
+          kyc_status: 'approved',
+          kyc_approved_at: new Date()
+        });
+        toast.success('✅ Document approuvé - KYC complet!');
+      } else {
+        toast.success('✅ Document approuvé');
+      }
+      
       loadPendingKyc();
       
       // Mettre à jour les documents localement
@@ -138,11 +157,15 @@ export default function KycVerification() {
       ));
     } catch (error) {
       console.error('Erreur approbation document:', error);
-      toast.error('Erreur lors de l\'approbation');
+      toast.error('❌ Erreur lors de l\'approbation: ' + error.message);
     }
   };
 
   const rejectDocument = async (documentId, salonId, reason) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir rejeter ce document ?')) {
+      return;
+    }
+    
     try {
       const docRef = doc(db, 'salons', salonId, 'documents', documentId);
       await updateDoc(docRef, {
@@ -152,7 +175,14 @@ export default function KycVerification() {
         rejected_by: 'admin'
       });
       
-      toast.success('Document rejeté');
+      // Mettre à jour le statut KYC du salon comme rejeté
+      await updateDoc(doc(db, 'salons', salonId), {
+        kyc_status: 'rejected',
+        kyc_rejected_at: new Date(),
+        kyc_rejection_reason: reason
+      });
+      
+      toast.success('❌ Document rejeté - KYC rejeté');
       loadPendingKyc();
       
       // Mettre à jour les documents localement
@@ -163,7 +193,7 @@ export default function KycVerification() {
       setRejectionReason('');
     } catch (error) {
       console.error('Erreur rejet document:', error);
-      toast.error('Erreur lors du rejet');
+      toast.error('❌ Erreur lors du rejet: ' + error.message);
     }
   };
 
@@ -385,9 +415,11 @@ export default function KycVerification() {
                           color="error"
                           startIcon={<Cancel />}
                           onClick={() => {
-                            const reason = prompt('Raison du rejet:');
-                            if (reason) {
-                              rejectDocument(doc.id, selectedSalon.id, reason);
+                            const reason = window.prompt('Raison du rejet (obligatoire):', '');
+                            if (reason && reason.trim()) {
+                              rejectDocument(doc.id, selectedSalon.id, reason.trim());
+                            } else if (reason !== null) {
+                              toast.error('Une raison de rejet est obligatoire');
                             }
                           }}
                         >

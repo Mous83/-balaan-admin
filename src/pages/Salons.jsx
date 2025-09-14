@@ -60,53 +60,82 @@ export default function Salons() {
     try {
       setLoading(true);
       const salonsRef = collection(db, 'salons');
-      const salonsSnapshot = await getDocs(query(salonsRef, orderBy('created_time', 'desc')));
+      const salonsSnapshot = await getDocs(salonsRef);
       
-      const salonsData = salonsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        created_at: doc.data().created_time?.toDate()?.toLocaleDateString() || 'N/A'
-      }));
+      const salonsData = salonsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          nom: data.nom_salon || data.nom || 'N/A',
+          ville: data.ville || 'N/A',
+          adresse: data.adresse || 'N/A',
+          telephone: data.numero_telephone || data.telephone || 'N/A',
+          email: data.email || 'N/A',
+          typeEtablissement: data.type_etablissement || 'N/A',
+          categoriesPrincipales: data.categories_principales || [],
+          note_moyenne: data.note_moyenne || 0,
+          photos: data.photos_salon || data.galerie || [],
+          isApproved: data.isApproved,
+          isDraft: data.isDraft,
+          kyc_status: data.kyc_status || 'pending',
+          status: data.status || (data.isApproved === true ? 'approved' : data.isApproved === false ? 'rejected' : 'pending'),
+          created_at: data.created_time?.toDate()?.toLocaleDateString() || data.createdTime?.toDate()?.toLocaleDateString() || 'N/A',
+          ...data
+        };
+      });
       
+      console.log('Salons chargés:', salonsData.length, salonsData);
       setSalons(salonsData);
     } catch (error) {
       console.error('Erreur chargement salons:', error);
-      toast.error('Erreur lors du chargement');
+      toast.error('Erreur lors du chargement: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleApprove = async (salonId) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir approuver ce salon ?')) {
+      return;
+    }
+    
     try {
       await updateDoc(doc(db, 'salons', salonId), {
         isApproved: true,
         status: 'approved',
-        approved_at: new Date()
+        approved_at: new Date(),
+        isDraft: false
       });
       
-      toast.success('Salon approuvé avec succès');
+      toast.success('✅ Salon approuvé avec succès');
       loadSalons();
     } catch (error) {
       console.error('Erreur approbation:', error);
-      toast.error('Erreur lors de l\'approbation');
+      toast.error('❌ Erreur lors de l\'approbation: ' + error.message);
     }
   };
 
   const handleReject = async (salonId, reason = '') => {
+    const confirmReason = window.prompt('Raison du rejet (optionnel):', reason);
+    if (confirmReason === null) return; // Annulé
+    
+    if (!window.confirm('Êtes-vous sûr de vouloir rejeter ce salon ?')) {
+      return;
+    }
+    
     try {
       await updateDoc(doc(db, 'salons', salonId), {
         isApproved: false,
         status: 'rejected',
-        rejection_reason: reason,
+        rejection_reason: confirmReason,
         rejected_at: new Date()
       });
       
-      toast.success('Salon rejeté');
+      toast.success('❌ Salon rejeté');
       loadSalons();
     } catch (error) {
       console.error('Erreur rejet:', error);
-      toast.error('Erreur lors du rejet');
+      toast.error('❌ Erreur lors du rejet: ' + error.message);
     }
   };
 
