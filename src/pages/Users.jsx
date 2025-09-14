@@ -59,24 +59,6 @@ export default function Users() {
       setLoading(true);
       const usersRef = collection(db, 'users');
       
-      // Compter le total et calculer les stats si c'est la première page
-      if (!isNextPage) {
-        const totalSnapshot = await getDocs(usersRef);
-        setTotalCount(totalSnapshot.size);
-        
-        // Calculer les statistiques sur TOUS les utilisateurs
-        let clients = 0, etablissements = 0, bannis = 0;
-        totalSnapshot.docs.forEach(doc => {
-          const data = doc.data();
-          if (data.role === 'Client') clients++;
-          else if (data.role === 'Établissement') etablissements++;
-          if (data.is_banned) bannis++;
-        });
-        
-        setTotalStats({ clients, etablissements, bannis });
-        console.log(`📊 Stats totales: ${totalSnapshot.size} users (${clients} clients, ${etablissements} établissements, ${bannis} bannis)`);
-      }
-      
       // Pagination avec limite
       let q = query(usersRef, limit(pageSize));
       
@@ -167,6 +149,15 @@ export default function Users() {
       } else {
         setUsers(usersData);
       }
+      
+      // Calculer les stats sur tous les utilisateurs chargés
+      const allUsers = isNextPage ? [...users, ...usersData] : usersData;
+      setTotalCount(allUsers.length);
+      setTotalStats({
+        clients: allUsers.filter(u => u.role === 'Client').length,
+        etablissements: allUsers.filter(u => u.role === 'Établissement').length,
+        bannis: allUsers.filter(u => u.is_banned).length
+      });
       
       // Gérer la pagination
       if (usersSnapshot.docs.length > 0) {
@@ -342,7 +333,7 @@ export default function Users() {
             Gestion des Utilisateurs
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            {users.length} sur {totalCount} utilisateurs au total
+            {users.length} utilisateurs chargés {hasNextPage ? '(plus disponibles)' : ''}
           </Typography>
           <Button 
             variant="text" 
