@@ -47,6 +47,7 @@ export default function Users() {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [lastVisible, setLastVisible] = useState(null);
   const [totalCount, setTotalCount] = useState(0);
+  const [totalStats, setTotalStats] = useState({ clients: 0, etablissements: 0, bannis: 0 });
   const pageSize = 50;
 
   useEffect(() => {
@@ -58,11 +59,22 @@ export default function Users() {
       setLoading(true);
       const usersRef = collection(db, 'users');
       
-      // Compter le total d'utilisateurs si c'est la première page
+      // Compter le total et calculer les stats si c'est la première page
       if (!isNextPage) {
         const totalSnapshot = await getDocs(usersRef);
         setTotalCount(totalSnapshot.size);
-        console.log(`📊 Total utilisateurs dans la DB: ${totalSnapshot.size}`);
+        
+        // Calculer les statistiques sur TOUS les utilisateurs
+        let clients = 0, etablissements = 0, bannis = 0;
+        totalSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.role === 'Client') clients++;
+          else if (data.role === 'Établissement') etablissements++;
+          if (data.is_banned) bannis++;
+        });
+        
+        setTotalStats({ clients, etablissements, bannis });
+        console.log(`📊 Stats totales: ${totalSnapshot.size} users (${clients} clients, ${etablissements} établissements, ${bannis} bannis)`);
       }
       
       // Pagination avec limite
@@ -378,7 +390,7 @@ export default function Users() {
                 </Avatar>
                 <Box>
                   <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                    {users.filter(u => u.role === 'Client').length}
+                    {totalStats.clients}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Clients
@@ -397,7 +409,7 @@ export default function Users() {
                 </Avatar>
                 <Box>
                   <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                    {users.filter(u => u.role === 'Établissement').length}
+                    {totalStats.etablissements}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Établissements
@@ -416,7 +428,7 @@ export default function Users() {
                 </Avatar>
                 <Box>
                   <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                    {users.filter(u => u.is_banned).length}
+                    {totalStats.bannis}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Bannis
