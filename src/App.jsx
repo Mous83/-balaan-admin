@@ -18,7 +18,10 @@ const Support = lazy(() => import('./pages/Support'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const Settings = lazy(() => import('./pages/Settings'));
 const PromoManagement = lazy(() => import('./pages/PromoManagement'));
+const PromoManagementV2 = lazy(() => import('./pages/PromoManagementV2'));
+const PaymentValidation = lazy(() => import('./pages/PaymentValidation'));
 const CrashMonitoring = lazy(() => import('./pages/CrashMonitoring'));
+const FirestoreMonitoring = lazy(() => import('./pages/FirestoreMonitoring'));
 
 // Thème Material-UI
 const theme = createTheme({
@@ -133,6 +136,22 @@ function App() {
             } 
           />
           <Route 
+            path="/promos-global" 
+            element={
+              <ProtectedRoute>
+                <PromoManagementV2 />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/payments" 
+            element={
+              <ProtectedRoute>
+                <PaymentValidation />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/kyc" 
             element={
               <ProtectedRoute>
@@ -177,6 +196,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/firestore-monitoring" 
+            element={
+              <ProtectedRoute>
+                <FirestoreMonitoring />
               </ProtectedRoute>
             } 
           />

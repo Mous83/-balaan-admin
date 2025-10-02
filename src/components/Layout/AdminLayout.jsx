@@ -32,7 +32,8 @@ import {
   LightMode,
   LocalOffer,
   BugReport,
-  Security
+  Security,
+  Payment
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
@@ -47,6 +48,7 @@ const menuItems = [
   { text: 'Dashboard', icon: <Dashboard />, path: '/' },
   { text: 'Salons', icon: <Business />, path: '/salons' },
   { text: 'Vérification KYC', icon: <VerifiedUser />, path: '/kyc' },
+  { text: 'Paiements Wafi', icon: <Payment />, path: '/payments' },
   { text: 'Utilisateurs', icon: <People />, path: '/users' },
   { text: 'Promos', icon: <LocalOffer />, path: '/promos' },
   { text: 'Support', icon: <SupportAgent />, path: '/support' },
@@ -58,7 +60,7 @@ const menuItems = [
 export default function AdminLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
-  const [badges, setBadges] = useState({ kyc: 0, support: 0 });
+  const [badges, setBadges] = useState({ kyc: 0, support: 0, payments: 0 });
   const [searchOpen, setSearchOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -86,10 +88,16 @@ export default function AdminLayout({ children }) {
       // Compter les tickets support
       const supportRef = collection(db, 'support_tickets');
       const supportSnapshot = await getDocs(supportRef);
+
+      // Compter les paiements en attente
+      const paymentsRef = collection(db, 'subscriptions');
+      const paymentsQuery = query(paymentsRef, where('status', '==', 'pending_payment'));
+      const paymentsSnapshot = await getDocs(paymentsQuery);
       
       setBadges({
         kyc: kycPending,
-        support: supportSnapshot.size
+        support: supportSnapshot.size,
+        payments: paymentsSnapshot.size
       });
     } catch (error) {
       console.error('Erreur badges:', error);
@@ -155,6 +163,10 @@ export default function AdminLayout({ children }) {
                   </Badge>
                 ) : item.path === '/support' && badges.support > 0 ? (
                   <Badge badgeContent={badges.support} color="error">
+                    {item.icon}
+                  </Badge>
+                ) : item.path === '/payments' && badges.payments > 0 ? (
+                  <Badge badgeContent={badges.payments} color="success">
                     {item.icon}
                   </Badge>
                 ) : (
